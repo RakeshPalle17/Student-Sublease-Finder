@@ -1,31 +1,21 @@
-from app import db
-from flask_bcrypt import Bcrypt
-
-class Listing(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    rent = db.Column(db.Float, nullable=False)
-    utilities = db.Column(db.String(200))
-    location = db.Column(db.String(200), nullable=False)
-    university = db.Column(db.String(100), nullable=False)
-    photos = db.Column(db.String(300))
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-    user = db.relationship('User', backref=db.backref('listings', lazy=True))
-
-
-bcrypt = Bcrypt()
+from .database import db
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
+    username = db.Column(db.String(80), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
+    password = db.Column(db.String(200), nullable=False)
 
-    def set_password(self, password):
-        self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+    def __repr__(self):
+        return f"<User {self.username}>"
 
-    def check_password(self, password):
-        return bcrypt.check_password_hash(self.password_hash, password)
+class Apartment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    description = db.Column(db.String(120), nullable=False)
+    location = db.Column(db.String(200), nullable=False)
+    rent = db.Column(db.Float, nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    utilities = db.Column(db.String(500))
+    university_name = db.Column(db.String(200), nullable=False)
+    photos = db.Column(db.String(500))  # Store photo URLs or paths
+    contact = db.Column(db.Integer, nullable=False)

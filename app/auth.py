@@ -1,34 +1,30 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-from app.models import db, User
+from werkzeug.security import generate_password_hash, check_password_hash
+from .models import User
+from .database import db
 
-auth = Blueprint('auth', __name__)
+auth_user = Blueprint('auth', __name__)
 
-@auth.route('/register', methods=['POST'])
+@auth_user.route('/register', methods=['POST'])
 def register():
-    data = request.json
-    if User.query.filter_by(email=data['email']).first():
-        return jsonify({'error': 'Email already exists'}), 400
+    data = request.get_json()
 
-    new_user = User(username=data['username'], email=data['email'])
-    new_user.set_password(data['password'])
+    if User.query.filter_by(email=data['email']).first():
+        return jsonify({"error": "Email already registered"}), 400
+
+    hashed_password = generate_password_hash(data['password'], method='pbkdf2:sha256')
+    new_user = User(username=data['username'], email=data['email'], password=hashed_password)
+
     db.session.add(new_user)
     db.session.commit()
 
-    return jsonify({'message': 'User registered successfully!'}), 201
+    return jsonify({"message": "User registered successfully"}), 201
 
-@auth.route('/login', methods=['POST'])
+@auth_user.route('/login', methods=['POST'])
 def login():
-    data = request.json
+    data = request.get_json()
     user = User.query.filter_by(email=data['email']).first()
 
-    if user and user.check_password(data['password']):
-        access_token = create_access_token(identity={'id': user.id, 'username': user.username})
-        return jsonify({'access_token': access_token}), 200
-    return jsonify({'error': 'Invalid credentials'}), 401
-
-@auth.route('/protected', methods=['GET'])
-@jwt_required()
-def protected():
-    current_user = get_jwt_identity()
-    return jsonify({'logged_in_as': current_user}), 200
+    if user and check_password_hash(user.password, data['password']):
+        return jsonify({"message": "Login successful", "username": user.username}), 200
+    return jsonify({"error": "Invalid email or password"}), 401
