@@ -37,32 +37,42 @@ def list_apartments():
     ]
     return jsonify({"apartments": result, "total": apartments.total, "pages": apartments.pages}), 200
 
+
 @auth_bp.route('/apartments', methods=['POST'])
 @jwt_required()
 def add_apartment():
-    current_user_id = get_jwt_identity()
+    try:
+        current_user_id = get_jwt_identity()
+        print(f"Current user ID: {current_user_id}")
+    except Exception as e:
+        print(f"JWT Error: {e}")
+        return jsonify({"error": "Invalid token"}), 401
+
     data = request.get_json()
 
     errors = apartment_schema.validate(data)
-
     if errors:
+        print(f"Validation errors: {errors}")
         return jsonify({"errors": errors}), 400
-    
-    new_apartment = Apartment(
-        apt_id=data['apt_id'],
-        description=data['description'],
-        location=data['location'],
-        rent=data['rent'],
-        title=data['title'],
-        utilities=data.get('utilities', ''),
-        university_name=data['university_name'],
-        photos=data.get('photos', ''),
-        contact=data['contact'],
-        user_id=current_user_id
-    )
-    
-    db.session.add(new_apartment)
-    db.session.commit()
-    
-    return jsonify({"message": "Apartment added successfully by"}), 201
 
+    try:
+        new_apartment = Apartment(
+            apt_id=data['apt_id'],
+            description=data['description'],
+            location=data['location'],
+            rent=data['rent'],
+            title=data['title'],
+            utilities=data.get('utilities', ''),
+            university_name=data['university_name'],
+            photos=data.get('photos', ''),
+            contact=data['contact'],
+            user_id=current_user_id
+        )
+
+        db.session.add(new_apartment)
+        db.session.commit()
+
+        return jsonify({"message": "Apartment added successfully"}), 201
+    except Exception as e:
+        print(f"Database error: {e}")
+        return jsonify({"error": "Could not add apartment"}), 500
