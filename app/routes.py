@@ -4,7 +4,7 @@ from .database import db
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.schemas import apartment_schema
 
-auth_bp = Blueprint('bp', __name__)
+auth_bp = Blueprint('auth_bp', __name__)
 
 @auth_bp.route('/apartments', methods=['GET'])
 def list_apartments():
@@ -41,14 +41,8 @@ def list_apartments():
 @auth_bp.route('/apartments', methods=['POST'])
 @jwt_required()
 def add_apartment():
-    try:
-        current_user_id = get_jwt_identity()
-        print(f"Current user ID: {current_user_id}")
-    except Exception as e:
-        print(f"JWT Error: {e}")
-        return jsonify({"error": "Invalid token"}), 401
-
     data = request.get_json()
+    current_user_id = get_jwt_identity()
 
     errors = apartment_schema.validate(data)
     if errors:
@@ -57,7 +51,6 @@ def add_apartment():
 
     try:
         new_apartment = Apartment(
-            apt_id=data['apt_id'],
             description=data['description'],
             location=data['location'],
             rent=data['rent'],
